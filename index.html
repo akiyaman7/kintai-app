@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>勤怠管理システム</title>
+<style>
+  :root{
+    --color-bg:#f3f5f8;
+    --color-panel:#ffffff;
+    --color-border:#e3e7ec;
+    --color-text:#2b3440;
+    --color-muted:#8a93a0;
+    --color-green:#1f9d55;
+    --color-green-dark:#17824a;
+    --color-orange:#e8872e;
+    --color-orange-dark:#cc7420;
+    --color-blue:#3b7ddd;
+    --color-blue-dark:#2f66b8;
+    --color-pink:#e05a74;
+    --color-pink-dark:#c54762;
+    --color-navy:#2d3a53;
+    --color-navy-dark:#20293c;
+    --color-sat:#2f66b8;
+    --color-sun:#d9534f;
+    --color-today-bg:#eaf3ff;
+    --color-holiday-bg:#fff2f3;
+    --color-leave-bg:#fffbe8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    padding:16px;
+    background:var(--color-bg);
+    color:var(--color-text);
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    font-size:14px;
+  }
+  .container{ max-width:1100px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+  a{ color:inherit; }
+
+  /* ---- ヘッダー ---- */
+  .topbar{
+    background:var(--color-panel);
+    border:1px solid var(--color-border);
+    border-radius:14px;
+    padding:12px 18px;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-icon{
+    width:38px; height:38px; border-radius:10px;
+    background:linear-gradient(135deg,var(--color-green),var(--color-blue));
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:18px;
+  }
+  .brand-name{ font-weight:bold; font-size:16px; }
+  .brand-sub{ font-size:11px; color:var(--color-muted); }
+  .topbar-right{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+  .month-nav{ display:flex; align-items:center; gap:6px; font-weight:bold; }
+  .month-nav button{
+    border:1px solid var(--color-border); background:#fff; border-radius:6px;
+    width:26px; height:26px; cursor:pointer; font-size:14px;
+  }
+  .icon-btn{
+    border:1px solid var(--color-border); background:#fff; border-radius:8px;
+    padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap;
+  }
+  .user-chip{ display:flex; align-items:center; gap:8px; }
+  .avatar{
+    width:32px; height:32px; border-radius:50%; background:var(--color-navy);
+    color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:bold;
+    flex-shrink:0;
+  }
+  .user-meta{ display:flex; flex-direction:column; gap:2px; }
+  .user-meta input{
+    border:1px solid transparent; border-radius:5px; padding:2px 4px; font-size:12px;
+    width:120px; background:transparent;
+  }
+  .user-meta input:first-child{ font-weight:bold; font-size:13px; }
+  .user-meta input:focus{ border-color:var(--color-blue); background:#fff; outline:none; }
+  .gear{ font-size:15px; padding:6px 8px; }
+
+  /* ---- 統計カード ---- */
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .stat-card{
+    background:var(--color-panel); border:1px solid var(--color-border); border-radius:14px;
+    padding:14px 16px; display:flex; flex-direction:column; gap:4px;
+  }
+  .stat-card-head{ font-size:12px; color:var(--color-muted); display:flex; align-items:center; gap:6px; }
+  .stat-dot{ width:8px; height:8px; border-radius:50%; background:var(--color-green); display:inline-block; }
+  .stat-today .stat-card-head{ font-weight:bold; color:var(--color-text); }
+  .badge-pill{
+    margin-left:auto; font-size:11px; background:#eef2f6; color:var(--color-muted);
+    padding:2px 8px; border-radius:999px;
+  }
+  .stat-clock{ font-size:26px; font-weight:bold; font-variant-numeric:tabular-nums; }
+  .stat-value{ font-size:24px; font-weight:bold; display:flex; align-items:baseline; gap:6px; }
+  .stat-sub{ font-size:11px; color:var(--color-muted); }
+  .stat-overtime{ border-left:4px solid var(--color-orange); }
+  .stat-overtime .stat-value{ color:var(--color-orange); }
+  .edit-pencil{
+    border:none; background:none; cursor:pointer; font-size:12px; color:var(--color-muted);
+  }
+
+  /* ---- 通知・ペース ---- */
+  .notice-banner{
+    background:#fff9ec; border:1px solid #f3e4ad; border-radius:10px;
+    padding:10px 14px; display:flex; align-items:center; gap:8px; font-size:13px;
+  }
+  .notice-close{ margin-left:auto; border:none; background:none; cursor:pointer; font-size:16px; color:var(--color-muted); }
+  .pace-card{
+    background:#eef6ff; border:1px solid #cfe3fb; border-left:4px solid var(--color-blue);
+    border-radius:10px; padding:12px 16px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .pace-card.caution{ background:#fff6ec; border-color:#f5ddb8; border-left-color:var(--color-orange); }
+  .pace-detail{ font-size:12px; color:var(--color-muted); margin-top:2px; }
+  .pace-btn{
+    border:1px solid var(--color-blue); background:#fff; color:var(--color-blue);
+    border-radius:8px; padding:8px 14px; font-size:13px; font-weight:bold; cursor:pointer; white-space:nowrap;
+  }
+
+  /* ---- 打刻ボタン群 ---- */
+  .action-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .action-btn{
+    border:none; border-radius:12px; color:#fff; padding:14px 8px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:4px; min-height:84px;
+  }
+  .action-icon{ font-size:20px; }
+  .action-label{ font-size:15px; font-weight:bold; }
+  .action-sub{ font-size:11px; opacity:0.9; }
+  .action-in{ background:var(--color-green); }
+  .action-in:active{ background:var(--color-green-dark); }
+  .action-out{ background:var(--color-orange); }
+  .action-out:active{ background:var(--color-orange-dark); }
+  .action-break{ background:var(--color-blue); }
+  .action-break:active{ background:var(--color-blue-dark); }
+  .action-return{ background:var(--color-pink); }
+  .action-return:active{ background:var(--color-pink-dark); }
+
+  .action-grid-sub{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .outline-btn{
+    border:1px solid var(--color-border); background:#fff; color:var(--color-text);
+    border-radius:10px; padding:10px; font-size:13px; font-weight:bold; cursor:pointer;
+  }
+  .outline-pink{ border-color:var(--color-pink); color:var(--color-pink); }
+  .dropdown-btn{
+    border:1px solid var(--color-border); background:#f7f9fb; color:var(--color-text);
+    border-radius:10px; padding:10px; font-size:13px; cursor:pointer; text-align:left;
+  }
+  .link-row{ text-align:center; font-size:12px; }
+  .link-row a{ text-decoration:none; color:var(--color-blue); }
+
+  /* ---- テーブル ---- */
+  .panel{ background:var(--color-panel); border:1px solid var(--color-border); border-radius:14px; padding:16px; }
+  .table-panel-head{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:10px; }
+  .table-panel-head h2{ font-size:16px; margin:0; }
+  .range-label{ font-size:12px; color:var(--color-muted); }
+  .legend{ display:flex; gap:10px; font-size:11px; color:var(--color-muted); margin-left:auto; }
+  .legend .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:3px; }
+  .dot-work{ background:var(--color-green); }
+  .dot-sat{ background:var(--color-sat); }
+  .dot-sun{ background:var(--color-sun); }
+  .dot-paid{ background:#d4a017; }
+  .csv-btn{
+    border:1px solid var(--color-border); background:#fff; border-radius:8px;
+    padding:6px 10px; font-size:12px; cursor:pointer;
+  }
+
+  .table-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table{ width:100%; border-collapse:collapse; min-width:1080px; font-size:12.5px; }
+  thead th{
+    background:#eef2f6; padding:8px 6px; white-space:nowrap; border-bottom:2px solid var(--color-border);
+  }
+  tbody td{ padding:6px; text-align:center; border-bottom:1px solid var(--color-border); white-space:nowrap; }
+  tbody tr.is-sat td.col-date{ color:var(--color-sat); }
+  tbody tr.is-sun td.col-date{ color:var(--color-sun); }
+  tbody tr.is-today{ background:var(--color-today-bg); }
+  tbody tr.row-holiday{ background:var(--color-holiday-bg); }
+  tbody tr.row-leave{ background:var(--color-leave-bg); }
+
+  .badge{ padding:2px 8px; border-radius:999px; font-size:11px; font-weight:bold; display:inline-block; white-space:nowrap; }
+  .badge-work{ background:#e6f6ec; color:var(--color-green); }
+  .badge-telework{ background:#e6f0fb; color:var(--color-blue-dark); }
+  .badge-direct{ background:#f0f0f0; color:#666; }
+  .badge-holiday{ background:#fde8ea; color:var(--color-sun); }
+  .badge-leave{ background:#fff6d8; color:#a3780a; }
+  .badge-muted{ background:#f0f0f0; color:#999; }
+  .badge-approved{ background:#e6f6ec; color:var(--color-green); }
+  .badge-pending{ background:#f0f0f0; color:#888; }
+
+  .val-zero{ color:var(--color-muted); }
+  .val-plus{ color:var(--color-orange); font-weight:bold; }
+  .val-empty{ color:var(--color-muted); }
+
+  .field-input{
+    width:84px; border:1px solid var(--color-border); border-radius:4px; padding:4px; font-size:12px; text-align:center;
+  }
+  select.field-input{ width:96px; text-align:left; }
+  input[type="text"].field-input{ width:110px; text-align:left; }
+
+  .row-edit-toggle{
+    border:1px solid var(--color-border); background:#fff; border-radius:6px;
+    padding:3px 8px; font-size:11px; cursor:pointer;
+  }
+
+  .table-footer{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-top:12px; font-size:12px; color:var(--color-muted); }
+  .footer-actions{ display:flex; gap:8px; }
+  .ghost-btn{ border:1px solid var(--color-border); background:#fff; border-radius:8px; padding:8px 14px; font-size:12px; cursor:pointer; }
+  .primary-btn{ border:none; background:var(--color-navy); color:#fff; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:bold; cursor:pointer; }
+  .primary-btn:active{ background:var(--color-navy-dark); }
+
+  @media (max-width:860px){
+    .stat-grid{ grid-template-columns:repeat(2,1fr); }
+  }
+  @media (max-width:600px){
+    body{ padding:10px; }
+    .action-grid{ grid-template-columns:repeat(2,1fr); }
+    .action-grid-sub{ grid-template-columns:repeat(2,1fr); }
+    .legend{ margin-left:0; flex-wrap:wrap; }
+    .stat-clock{ font-size:22px; }
+  }
+  @media (max-width:420px){
+    .stat-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">⏱</div>
+      <div>
+        <div class="brand-name">勤怠管理システム</div>
+        <div class="brand-sub">スマート打刻と勤怠マネジメント</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="month-nav">
+        <button id="prevMonth" type="button">‹</button>
+        <span id="monthLabel"></span>
+        <button id="nextMonth" type="button">›</button>
+      </div>
+      <button class="icon-btn" id="btnExport" type="button">🖨 勤務表を出力</button>
+      <div class="user-chip">
+        <div class="avatar" id="avatarInitial">-</div>
+        <div class="user-meta">
+          <input type="text" id="nameInput" maxlength="20" placeholder="氏名を入力">
+          <input type="text" id="deptInput" maxlength="20" placeholder="部署を入力">
+        </div>
+      </div>
+      <button class="icon-btn gear" id="btnSettings" type="button" title="設定">⚙</button>
+    </div>
+  </header>
+
+  <section class="stat-grid">
+    <div class="stat-card stat-today">
+      <div class="stat-card-head"><span class="stat-dot"></span> TODAY <span class="badge-pill" id="todayWorkplaceBadge">-</span></div>
+      <div class="stat-sub" id="todayDateLabel"></div>
+      <div class="stat-clock" id="clock"></div>
+      <div class="stat-sub" id="todayStatus"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-head">当月累計時間</div>
+      <div class="stat-value" id="monthTotalHours">-</div>
+      <div class="stat-sub" id="monthTotalSub">-</div>
+    </div>
+    <div class="stat-card stat-overtime">
+      <div class="stat-card-head">時間外(当月)</div>
+      <div class="stat-value" id="monthOvertimeHours">-</div>
+      <div class="stat-sub" id="monthOvertimeSub">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-head">有給残日数</div>
+      <div class="stat-value"><span id="paidLeaveDays">-</span>日 <button class="edit-pencil" id="btnEditPaidLeave" type="button" title="編集">✎</button></div>
+      <div class="stat-sub">クリックして編集できます</div>
+    </div>
+  </section>
+
+  <section class="notice-banner" id="noticeBanner">
+    <span>💡</span>
+    <span id="noticeText"></span>
+    <button class="notice-close" id="noticeClose" type="button">×</button>
+  </section>
+
+  <div class="pace-card" id="paceCard">
+    <div>
+      <strong id="paceTitle">今週の勤怠ペース</strong>
+      <div class="pace-detail" id="paceDetail"></div>
+    </div>
+    <button class="pace-btn" id="btnRequest" type="button">休暇・残業の申請</button>
+  </div>
+
+  <section class="action-grid">
+    <button class="action-btn action-in" id="btnClockIn" type="button">
+      <span class="action-icon">⏱</span><span class="action-label">出勤</span><span class="action-sub" id="subClockIn">未打刻</span>
+    </button>
+    <button class="action-btn action-out" id="btnClockOut" type="button">
+      <span class="action-icon">🏠</span><span class="action-label">退勤</span><span class="action-sub" id="subClockOut">未打刻</span>
+    </button>
+    <button class="action-btn action-break" id="btnBreakStart" type="button">
+      <span class="action-icon">☕</span><span class="action-label">休憩</span><span class="action-sub" id="subBreak">ランチ・リフレッシュ</span>
+    </button>
+    <button class="action-btn action-return" id="btnBreakEnd" type="button">
+      <span class="action-icon">↩</span><span class="action-label">戻り</span><span class="action-sub" id="subReturn">休憩からの復帰</span>
+    </button>
+  </section>
+
+  <section class="action-grid-sub">
+    <button class="outline-btn" id="btnDirectOut" type="button">🚗 直行</button>
+    <button class="outline-btn outline-pink" id="btnDirectHome" type="button">🏁 直帰</button>
+  </section>
+
+  <section class="action-grid-sub">
+    <button class="dropdown-btn" id="btnReportMD" type="button">📋 日報・勤怠MD ▾</button>
+    <button class="dropdown-btn" id="btnReportSubmitMD" type="button">📤 日報提出MD ▾</button>
+  </section>
+
+  <div class="link-row">
+    <a href="#" id="btnWorkplaceChange">📍 勤務先の変更申請</a>
+  </div>
+
+  <section class="panel">
+    <div class="table-panel-head">
+      <h2>勤怠実績明細</h2>
+      <span class="range-label" id="rangeLabel"></span>
+      <div class="legend">
+        <span><i class="dot dot-work"></i>出勤</span>
+        <span><i class="dot dot-sat"></i>土・祝</span>
+        <span><i class="dot dot-sun"></i>休日</span>
+        <span><i class="dot dot-paid"></i>有休</span>
+      </div>
+      <button class="csv-btn" id="btnCsv" type="button">⬇ CSV出力</button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>日付</th><th>申請</th><th>作業場所</th><th>勤務区分</th><th>開始</th><th>終了</th><th>休憩</th>
+            <th>労働時間</th><th>時間外</th><th>法定外残業</th><th>深夜</th><th>メモ</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <span id="footerSummary"></span>
+      <div class="footer-actions">
+        <button class="ghost-btn" id="btnOtherMonth" type="button">他月の勤怠を見る</button>
+        <button class="primary-btn" id="btnMonthlyRequest" type="button">月次勤怠の申請を行う</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "kintaiApp.v2";
+  var WEEKDAY_JP = ["日","月","火","水","木","金","土"];
+  var SCHEDULED_HOURS = 7.5;   // 所定労働時間
+  var STATUTORY_HOURS = 8;     // 法定労働時間(1日)
+
+  var CATEGORY_OPTIONS = [
+    { value:"", label:"-" },
+    { value:"work", label:"出勤" },
+    { value:"working", label:"出勤中" },
+    { value:"telework", label:"テレワーク" },
+    { value:"direct", label:"直行・直帰" },
+    { value:"scheduled_holiday", label:"公休" },
+    { value:"statutory_holiday", label:"法定休日" },
+    { value:"paid_leave", label:"有給休暇" },
+    { value:"special_leave", label:"特別休暇" }
+  ];
+  var WORKPLACE_OPTIONS = [
+    { value:"", label:"-" },
+    { value:"office", label:"オフィス" },
+    { value:"home", label:"在宅" },
+    { value:"direct_out", label:"直行" },
+    { value:"direct_home", label:"直帰" }
+  ];
+  var REQUEST_OPTIONS = [
+    { value:"", label:"-" },
+    { value:"pending", label:"申請中" },
+    { value:"approved", label:"承認" }
+  ];
+
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function dateKey(d){ return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); }
+  function nowHHMM(){ var d = new Date(); return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+  function toMinutes(hhmm){ var p = hhmm.split(":"); return parseInt(p[0],10) * 60 + parseInt(p[1],10); }
+
+  function formatHours(h){
+    if (h === null || h === undefined) return "-";
+    var totalMin = Math.round(h * 60);
+    var hh = Math.floor(totalMin / 60);
+    var mm = totalMin % 60;
+    return hh + ":" + pad(mm);
+  }
+  function formatHM(hours){
+    var totalMin = Math.max(0, Math.round(hours * 60));
+    var h = Math.floor(totalMin / 60);
+    var m = totalMin % 60;
+    return h + "h " + pad(m) + "m";
+  }
+
+  // ---- データ ----
+
+  function buildDummyData(){
+    var today = new Date();
+    var y = today.getFullYear(), m = today.getMonth();
+    function key(day){ return y + "-" + pad(m+1) + "-" + pad(day); }
+    var records = {};
+    records[key(1)] = { start:"08:51", end:"18:12", breakMin:60, breakStart:null, workplace:"office", category:"work", request:"", memo:"" };
+    records[key(2)] = { start:"08:55", end:"18:11", breakMin:60, breakStart:null, workplace:"office", category:"work", request:"", memo:"" };
+    records[key(3)] = { start:"09:10", end:"17:30", breakMin:45, breakStart:null, workplace:"home", category:"telework", request:"", memo:"" };
+    return {
+      name:"サンプル 太郎",
+      department:"サンプル部署",
+      paidLeaveDays:12.5,
+      monthlyStandardHours:160,
+      monthlyOvertimeLimit:45,
+      records:records
+    };
+  }
+
+  function loadData(){
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        parsed.name = parsed.name || "サンプル 太郎";
+        parsed.department = parsed.department || "サンプル部署";
+        parsed.paidLeaveDays = (parsed.paidLeaveDays !== undefined) ? parsed.paidLeaveDays : 12.5;
+        parsed.monthlyStandardHours = parsed.monthlyStandardHours || 160;
+        parsed.monthlyOvertimeLimit = parsed.monthlyOvertimeLimit || 45;
+        parsed.records = parsed.records || {};
+        return parsed;
+      }
+    } catch (e) {
+      // 読み込み失敗時は初期データで作り直す
+    }
+    var initial = buildDummyData();
+    saveData(initial);
+    return initial;
+  }
+  function saveData(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+  var appData = loadData();
+  var editingRows = {}; // 行ごとの編集モード状態(保存しない一時状態)
+
+  var today0 = new Date();
+  var viewYear = today0.getFullYear();
+  var viewMonth = today0.getMonth(); // 0-11
+
+  function ensureRecord(key){
+    if (!appData.records[key]) {
+      appData.records[key] = { start:null, end:null, breakMin:0, breakStart:null, workplace:"", category:"", request:"", memo:"" };
+    }
+    return appData.records[key];
+  }
+
+  // ---- 表示用ラベル ----
+
+  function labelOf(options, value){
+    for (var i=0;i<options.length;i++) if (options[i].value === value) return options[i].label;
+    return "-";
+  }
+  function categoryClass(v){
+    if (v==="work" || v==="working") return "badge-work";
+    if (v==="telework") return "badge-telework";
+    if (v==="direct") return "badge-direct";
+    if (v==="scheduled_holiday" || v==="statutory_holiday") return "badge-holiday";
+    if (v==="paid_leave" || v==="special_leave") return "badge-leave";
+    return "badge-muted";
+  }
+  function requestClass(v){
+    if (v==="approved") return "badge-approved";
+    if (v==="pending") return "badge-pending";
+    return "badge-muted";
+  }
+  function autoCategory(dateObj){
+    var day = dateObj.getDay();
+    if (day === 0 || day === 6) return "scheduled_holiday";
+    return "";
+  }
+
+  // ---- 深夜(22:00〜翌5:00)労働時間の算出 ----
+
+  function overlapMinutes(aStart, aEnd, bStart, bEnd){
+    return Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
+  }
+  function nightMinutes(startMin, endMin){
+    // 日またぎ勤務にも対応できるよう、24時間ごとに夜間帯(22-24時, 0-5時)との重なりを積算する
+    var total = 0, dayBase = 0;
+    while (dayBase < endMin) {
+      total += overlapMinutes(startMin, endMin, dayBase + 22*60, dayBase + 24*60);
+      total += overlapMinutes(startMin, endMin, dayBase + 24*60, dayBase + 24*60 + 5*60);
+      dayBase += 24*60;
+    }
+    return total;
+  }
+
+  function calcRow(record){
+    if (!record || !record.start || !record.end) {
+      return { labor:null, overtime:null, legalOvertime:null, midnight:null };
+    }
+    var startMin = toMinutes(record.start);
+    var endMin = toMinutes(record.end);
+    if (endMin <= startMin) endMin += 24 * 60; // 日をまたぐ勤務
+
+    var breakMin = record.breakMin || 0;
+    var workMin = Math.max(0, endMin - startMin - breakMin);
+    var laborHour = workMin / 60;
+
+    return {
+      labor: laborHour,
+      overtime: Math.max(laborHour - SCHEDULED_HOURS, 0),
+      legalOvertime: Math.max(laborHour - STATUTORY_HOURS, 0),
+      midnight: nightMinutes(startMin, endMin) / 60
+    };
+  }
+
+  function valueCell(h, highlightPlus){
+    if (h === null) return '<span class="val-empty">-</span>';
+    if (h > 0 && highlightPlus) return '<span class="val-plus">' + formatHours(h) + '</span>';
+    if (h === 0) return '<span class="val-zero">' + formatHours(h) + '</span>';
+    return formatHours(h);
+  }
+
+  // ---- 描画: ヘッダー ----
+
+  function renderTopbar(){
+    document.getElementById("monthLabel").textContent = viewYear + "年" + (viewMonth+1) + "月度";
+    document.getElementById("nameInput").value = appData.name || "";
+    document.getElementById("deptInput").value = appData.department || "";
+    var initial = (appData.name || "").trim().charAt(0) || "?";
+    document.getElementById("avatarInitial").textContent = initial;
+  }
+
+  // ---- 描画: 統計カード ----
+
+  function monthDaysArray(y, m){
+    var n = new Date(y, m+1, 0).getDate();
+    var arr = [];
+    for (var d=1; d<=n; d++) arr.push(new Date(y, m, d));
+    return arr;
+  }
+
+  function renderStatCards(){
+    var days = monthDaysArray(viewYear, viewMonth);
+    var totalLabor = 0, totalLegalOvertime = 0;
+    days.forEach(function(d){
+      var rec = appData.records[dateKey(d)];
+      var calc = calcRow(rec);
+      if (calc.labor !== null) totalLabor += calc.labor;
+      if (calc.legalOvertime !== null) totalLegalOvertime += calc.legalOvertime;
+    });
+
+    document.getElementById("monthTotalHours").textContent = formatHM(totalLabor);
+    var pct = appData.monthlyStandardHours > 0 ? Math.round((totalLabor / appData.monthlyStandardHours) * 100) : 0;
+    document.getElementById("monthTotalSub").textContent = "基準:" + appData.monthlyStandardHours + "h ・ " + pct + "%達成";
+
+    document.getElementById("monthOvertimeHours").textContent = formatHM(totalLegalOvertime);
+    var remain = Math.max(appData.monthlyOvertimeLimit - totalLegalOvertime, 0);
+    document.getElementById("monthOvertimeSub").textContent = "残業上限まで残り " + formatHM(remain);
+
+    document.getElementById("paidLeaveDays").textContent = appData.paidLeaveDays;
+  }
+
+  // ---- 描画: 本日カード・打刻ボタン ----
+
+  function renderToday(){
+    var now = new Date();
+    document.getElementById("todayDateLabel").textContent =
+      now.getFullYear() + "年" + (now.getMonth()+1) + "月" + now.getDate() + "日(" + WEEKDAY_JP[now.getDay()] + ")";
+    document.getElementById("clock").textContent = pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds());
+
+    var key = dateKey(now);
+    var rec = appData.records[key];
+
+    document.getElementById("todayWorkplaceBadge").textContent = rec && rec.workplace ? labelOf(WORKPLACE_OPTIONS, rec.workplace) : "未設定";
+
+    var status;
+    if (!rec || !rec.start) {
+      status = "本日はまだ出勤していません";
+    } else if (rec.start && !rec.end) {
+      status = "出勤打刻済み (" + rec.start + ")";
+      if (rec.breakStart) status += " ・ 休憩中(" + rec.breakStart + "〜)";
+    } else {
+      status = "本日の勤務は終了しました (" + rec.start + "〜" + rec.end + ")";
+    }
+    document.getElementById("todayStatus").textContent = status;
+
+    document.getElementById("subClockIn").textContent = rec && rec.start ? (rec.start + " 打刻済み") : "未打刻";
+    document.getElementById("subClockOut").textContent = rec && rec.end ? (rec.end + " 打刻済み") : "未打刻";
+    document.getElementById("subBreak").textContent = rec && rec.breakStart ? ("休憩中 (" + rec.breakStart + "〜)") : "ランチ・リフレッシュ";
+    document.getElementById("subReturn").textContent = "休憩からの復帰";
+  }
+
+  // ---- 描画: お知らせ・週次ペース ----
+
+  function renderNotice(){
+    var h = new Date().getHours();
+    var greeting = h < 12 ? "おはようございます！" : (h < 18 ? "こんにちは！" : "お疲れ様です！");
+    document.getElementById("noticeText").textContent = greeting + " 今日も適度に休憩を取りながら頑張りましょう。";
+  }
+
+  function renderPace(){
+    var now = new Date();
+    var day = now.getDay();
+    var diffToMonday = (day === 0 ? -6 : 1 - day);
+    var monday = new Date(now); monday.setDate(now.getDate() + diffToMonday);
+
+    var endMinutesList = [];
+    var weeklyOvertime = 0;
+    for (var i=0;i<7;i++) {
+      var d = new Date(monday); d.setDate(monday.getDate() + i);
+      var rec = appData.records[dateKey(d)];
+      var calc = calcRow(rec);
+      if (rec && rec.end) endMinutesList.push(toMinutes(rec.end));
+      if (calc.legalOvertime) weeklyOvertime += calc.legalOvertime;
+    }
+
+    var card = document.getElementById("paceCard");
+    var detail;
+    if (endMinutesList.length === 0) {
+      document.getElementById("paceTitle").textContent = "今週の勤怠ペース";
+      detail = "まだ今週の退勤記録がありません。";
+      card.classList.remove("caution");
+    } else {
+      var avg = Math.round(endMinutesList.reduce(function(a,b){return a+b;},0) / endMinutesList.length);
+      var avgStr = pad(Math.floor(avg/60)) + ":" + pad(avg % 60);
+      detail = "平均退勤時刻 " + avgStr + " ・ 週の残業時間 " + formatHours(weeklyOvertime);
+      if (weeklyOvertime > 10) {
+        document.getElementById("paceTitle").textContent = "今週はやや残業が多めです";
+        card.classList.add("caution");
+      } else {
+        document.getElementById("paceTitle").textContent = "今週の勤怠ペースは順調です！";
+        card.classList.remove("caution");
+      }
+    }
+    document.getElementById("paceDetail").textContent = detail;
+  }
+
+  // ---- 描画: 明細テーブル ----
+
+  function buildSelect(options, value, key, field){
+    var html = '<select class="field-input" data-date="' + key + '" data-field="' + field + '">';
+    options.forEach(function(opt){
+      html += '<option value="' + opt.value + '"' + (opt.value === value ? " selected" : "") + '>' + opt.label + '</option>';
+    });
+    html += '</select>';
+    return html;
+  }
+
+  function renderTable(){
+    var days = monthDaysArray(viewYear, viewMonth);
+    var todayKey = dateKey(new Date());
+    var rows = [];
+    var holidayCount = 0;
+
+    days.forEach(function(d){
+      var key = dateKey(d);
+      var record = appData.records[key];
+      var calc = calcRow(record);
+      var isEditing = !!editingRows[key];
+
+      var category = (record && record.category) || autoCategory(d);
+      var workplace = (record && record.workplace) || "";
+      var request = (record && record.request) || "";
+      var memo = (record && record.memo) || "";
+      var breakMin = (record && record.breakMin) || 0;
+      var start = (record && record.start) || "";
+      var end = (record && record.end) || "";
+
+      if (category === "scheduled_holiday" || category === "statutory_holiday") holidayCount++;
+
+      var rowClass = "";
+      if (d.getDay() === 6) rowClass += " is-sat";
+      if (d.getDay() === 0) rowClass += " is-sun";
+      if (key === todayKey) rowClass += " is-today";
+      else if (category === "scheduled_holiday" || category === "statutory_holiday") rowClass += " row-holiday";
+      else if (category === "paid_leave" || category === "special_leave") rowClass += " row-leave";
+
+      var cellRequest, cellWorkplace, cellCategory, cellStart, cellEnd, cellBreak, cellMemo;
+      if (isEditing) {
+        cellRequest = buildSelect(REQUEST_OPTIONS, request, key, "request");
+        cellWorkplace = buildSelect(WORKPLACE_OPTIONS, workplace, key, "workplace");
+        cellCategory = buildSelect(CATEGORY_OPTIONS, category, key, "category");
+        cellStart = '<input type="time" class="field-input" data-date="' + key + '" data-field="start" value="' + start + '">';
+        cellEnd = '<input type="time" class="field-input" data-date="' + key + '" data-field="end" value="' + end + '">';
+        cellBreak = '<input type="number" class="field-input" min="0" step="5" data-date="' + key + '" data-field="breakMin" value="' + breakMin + '">';
+        cellMemo = '<input type="text" class="field-input" data-date="' + key + '" data-field="memo" value="' + memo.replace(/"/g,"&quot;") + '">';
+      } else {
+        cellRequest = '<span class="badge ' + requestClass(request) + '">' + labelOf(REQUEST_OPTIONS, request) + '</span>';
+        cellWorkplace = workplace ? labelOf(WORKPLACE_OPTIONS, workplace) : '<span class="val-empty">-</span>';
+        cellCategory = '<span class="badge ' + categoryClass(category) + '">' + (category ? labelOf(CATEGORY_OPTIONS, category) : "-") + '</span>';
+        cellStart = start || '<span class="val-empty">-</span>';
+        cellEnd = end || '<span class="val-empty">-</span>';
+        cellBreak = breakMin ? formatHours(breakMin/60) : '<span class="val-empty">-</span>';
+        cellMemo = memo ? memo : '<span class="val-empty">-</span>';
+      }
+
+      rows.push(
+        '<tr class="' + rowClass.trim() + '" data-date="' + key + '">' +
+          '<td class="col-date">' + d.getDate() + '日(' + WEEKDAY_JP[d.getDay()] + ')</td>' +
+          '<td>' + cellRequest + '</td>' +
+          '<td>' + cellWorkplace + '</td>' +
+          '<td>' + cellCategory + '</td>' +
+          '<td>' + cellStart + '</td>' +
+          '<td>' + cellEnd + '</td>' +
+          '<td>' + cellBreak + '</td>' +
+          '<td>' + valueCell(calc.labor, false) + '</td>' +
+          '<td>' + valueCell(calc.overtime, true) + '</td>' +
+          '<td>' + valueCell(calc.legalOvertime, true) + '</td>' +
+          '<td>' + valueCell(calc.midnight, true) + '</td>' +
+          '<td>' + cellMemo + '</td>' +
+          '<td><button type="button" class="row-edit-toggle" data-date="' + key + '">' + (isEditing ? "✓ 完了" : "✎ 編集") + '</button></td>' +
+        '</tr>'
+      );
+    });
+
+    document.getElementById("tableBody").innerHTML = rows.join("");
+    document.getElementById("rangeLabel").textContent =
+      viewYear + "年" + pad(viewMonth+1) + "月01日 ～ " + pad(viewMonth+1) + "月" + days.length + "日";
+    document.getElementById("footerSummary").textContent =
+      "表示件数: " + days.length + "件(非稼働日:" + holidayCount + "日)";
+  }
+
+  function renderAll(){
+    renderTopbar();
+    renderStatCards();
+    renderToday();
+    renderNotice();
+    renderPace();
+    renderTable();
+  }
+
+  function refreshAfterRecordChange(key){
+    renderTable();
+    renderStatCards();
+    renderPace();
+    if (key === dateKey(new Date())) renderToday();
+  }
+
+  // ---- イベント: 月送り ----
+
+  document.getElementById("prevMonth").addEventListener("click", function(){
+    viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    renderTopbar(); renderStatCards(); renderTable();
+  });
+  document.getElementById("nextMonth").addEventListener("click", function(){
+    viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    renderTopbar(); renderStatCards(); renderTable();
+  });
+
+  // ---- イベント: 打刻ボタン ----
+
+  document.getElementById("btnClockIn").addEventListener("click", function(){
+    var key = dateKey(new Date());
+    var rec = ensureRecord(key);
+    if (rec.start && !confirm("本日の出勤時刻は既に記録されています。上書きしますか？")) return;
+    rec.start = nowHHMM();
+    if (!rec.category) rec.category = "working";
+    if (!rec.workplace) rec.workplace = "office";
+    saveData(appData);
+    refreshAfterRecordChange(key);
+  });
+
+  document.getElementById("btnClockOut").addEventListener("click", function(){
+    var key = dateKey(new Date());
+    var rec = ensureRecord(key);
+    if (!rec.start && !confirm("出勤記録がありません。このまま退勤時刻のみ記録しますか？")) return;
+    if (rec.end && !confirm("本日の退勤時刻は既に記録されています。上書きしますか？")) return;
+    rec.end = nowHHMM();
+    if (!rec.category || rec.category === "working") rec.category = "work";
+    saveData(appData);
+    refreshAfterRecordChange(key);
+  });
+
+  document.getElementById("btnBreakStart").addEventListener("click", function(){
+    var key = dateKey(new Date());
+    var rec = ensureRecord(key);
+    if (rec.breakStart) { alert("既に休憩中です。"); return; }
+    rec.breakStart = nowHHMM();
+    saveData(appData);
+    refreshAfterRecordChange(key);
+  });
+
+  document.getElementById("btnBreakEnd").addEventListener("click", function(){
+    var key = dateKey(new Date());
+    var rec = ensureRecord(key);
+    if (!rec.breakStart) { alert("休憩を開始していません。"); return; }
+    var elapsed = Math.max(0, toMinutes(nowHHMM()) - toMinutes(rec.breakStart));
+    rec.breakMin = (rec.breakMin || 0) + elapsed;
+    rec.breakStart = null;
+    saveData(appData);
+    refreshAfterRecordChange(key);
+  });
+
+  document.getElementById("btnDirectOut").addEventListener("click", function(){
+    var key = dateKey(new Date());
+    var rec = ensureRecord(key);
+    rec.workplace = "direct_out";
+    if (!rec.start) { rec.start = nowHHMM(); rec.category = "working"; }
+    saveData(appData);
+    refreshAfterRecordChange(key);
+  });
+
+  document.getElementById("btnDirectHome").addEventListener("click", function(){
+    var key = dateKey(new Date());
+    var rec = ensureRecord(key);
+    rec.workplace = "direct_home";
+    if (!rec.end) { rec.end = nowHHMM(); rec.category = "work"; }
+    saveData(appData);
+    refreshAfterRecordChange(key);
+  });
+
+  // ---- イベント: 氏名・部署 ----
+
+  document.getElementById("nameInput").addEventListener("input", function(e){
+    appData.name = e.target.value;
+    saveData(appData);
+    renderTopbar();
+  });
+  document.getElementById("deptInput").addEventListener("input", function(e){
+    appData.department = e.target.value;
+    saveData(appData);
+  });
+
+  // ---- イベント: 有給残日数・設定 ----
+
+  document.getElementById("btnEditPaidLeave").addEventListener("click", function(){
+    var v = prompt("有給残日数を入力してください", appData.paidLeaveDays);
+    if (v === null) return;
+    var num = parseFloat(v);
+    if (isNaN(num) || num < 0) { alert("正しい数値を入力してください。"); return; }
+    appData.paidLeaveDays = num;
+    saveData(appData);
+    renderStatCards();
+  });
+
+  document.getElementById("btnSettings").addEventListener("click", function(){
+    var v1 = prompt("当月の基準労働時間(h)を入力してください", appData.monthlyStandardHours);
+    if (v1 !== null && !isNaN(parseFloat(v1))) appData.monthlyStandardHours = parseFloat(v1);
+    var v2 = prompt("月の残業上限(h)を入力してください", appData.monthlyOvertimeLimit);
+    if (v2 !== null && !isNaN(parseFloat(v2))) appData.monthlyOvertimeLimit = parseFloat(v2);
+    saveData(appData);
+    renderStatCards();
+  });
+
+  // ---- イベント: 出力・申請系(簡易実装) ----
+
+  document.getElementById("btnExport").addEventListener("click", function(){ window.print(); });
+  document.getElementById("noticeClose").addEventListener("click", function(){
+    document.getElementById("noticeBanner").style.display = "none";
+  });
+  document.getElementById("btnRequest").addEventListener("click", function(){
+    alert("休暇・残業の申請機能は準備中です。");
+  });
+  document.getElementById("btnReportMD").addEventListener("click", function(){
+    alert("日報・勤怠MD連携は準備中です。");
+  });
+  document.getElementById("btnReportSubmitMD").addEventListener("click", function(){
+    alert("日報提出MD連携は準備中です。");
+  });
+  document.getElementById("btnOtherMonth").addEventListener("click", function(){
+    alert("上部の「‹ ›」ボタンで月を切り替えられます。");
+  });
+  document.getElementById("btnMonthlyRequest").addEventListener("click", function(){
+    alert("月次勤怠の申請機能は準備中です。");
+  });
+
+  document.getElementById("btnWorkplaceChange").addEventListener("click", function(e){
+    e.preventDefault();
+    var input = prompt("本日の勤務場所を入力してください(オフィス / 在宅 / 直行 / 直帰)");
+    if (!input) return;
+    var map = { "オフィス":"office", "在宅":"home", "直行":"direct_out", "直帰":"direct_home" };
+    var value = map[input.trim()];
+    if (!value) { alert("入力内容を確認してください。"); return; }
+    var key = dateKey(new Date());
+    var rec = ensureRecord(key);
+    rec.workplace = value;
+    saveData(appData);
+    refreshAfterRecordChange(key);
+  });
+
+  // ---- イベント: CSV出力 ----
+
+  document.getElementById("btnCsv").addEventListener("click", function(){
+    var days = monthDaysArray(viewYear, viewMonth);
+    var header = ["日付","申請","作業場所","勤務区分","開始","終了","休憩","労働時間","時間外","法定外残業","深夜","メモ"];
+    var lines = [header.join(",")];
+    days.forEach(function(d){
+      var key = dateKey(d);
+      var record = appData.records[key];
+      var calc = calcRow(record);
+      var category = (record && record.category) || autoCategory(d);
+      var row = [
+        d.getDate() + "日(" + WEEKDAY_JP[d.getDay()] + ")",
+        labelOf(REQUEST_OPTIONS, record && record.request || ""),
+        record && record.workplace ? labelOf(WORKPLACE_OPTIONS, record.workplace) : "-",
+        category ? labelOf(CATEGORY_OPTIONS, category) : "-",
+        (record && record.start) || "-",
+        (record && record.end) || "-",
+        record && record.breakMin ? formatHours(record.breakMin/60) : "-",
+        formatHours(calc.labor), formatHours(calc.overtime), formatHours(calc.legalOvertime), formatHours(calc.midnight),
+        '"' + ((record && record.memo) || "").replace(/"/g,'""') + '"'
+      ];
+      lines.push(row.join(","));
+    });
+    var csv = "﻿" + lines.join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "kintai_" + viewYear + pad(viewMonth+1) + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ---- イベント: 明細テーブル(編集トグル・項目変更) ----
+
+  document.getElementById("tableBody").addEventListener("click", function(e){
+    if (!e.target.classList.contains("row-edit-toggle")) return;
+    var key = e.target.getAttribute("data-date");
+    editingRows[key] = !editingRows[key];
+    renderTable();
+  });
+
+  document.getElementById("tableBody").addEventListener("change", function(e){
+    var target = e.target;
+    if (!target.classList.contains("field-input")) return;
+    var key = target.getAttribute("data-date");
+    var field = target.getAttribute("data-field");
+    var value = target.value;
+
+    if (field === "breakMin") {
+      value = parseInt(value, 10);
+      if (isNaN(value) || value < 0) value = 0;
+    }
+    if ((field === "start" || field === "end") && value === "") value = null;
+
+    var rec = ensureRecord(key);
+    rec[field] = value;
+    saveData(appData);
+    refreshAfterRecordChange(key);
+  });
+
+  renderAll();
+  setInterval(function(){ renderToday(); }, 1000);
+
+})();
+</script>
+</body>
+</html>
