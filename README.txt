@@ -70,3 +70,25 @@ index.html をダブルクリックすると、既定のブラウザで開きま
 データはブラウザのlocalStorageに保存されています。削除したい場合は、
 ブラウザの「サイトデータを削除」機能（このファイルを開いたサイト/ファイルの
 データ）から消去してください。
+
+
+■ Cloudflare PagesでのBasic認証について
+
+functions/_middleware.js により、Cloudflare Pagesで公開したサイト全体に
+Basic認証がかかるようにしています。ユーザー名・パスワードはコードに書かず、
+Cloudflare側の環境変数から読み込みます。
+
+[設定手順]
+1. Cloudflareダッシュボード(https://dash.cloudflare.com)を開く
+2. 「Workers & Pages」> 対象のPagesプロジェクトを選択
+3. 「Settings」>「Environment variables」を開く
+4. Production（必要であればPreviewも）に、以下の2つを追加する
+   ・BASIC_AUTH_USERNAME : ログイン時のユーザー名
+   ・BASIC_AUTH_PASSWORD : ログイン時のパスワード（「Encrypt」にチェックを
+     入れてSecretとして保存することを推奨）
+5. 保存後、デプロイを再実行する（環境変数の変更は次回以降のデプロイから
+   反映されます。GitHubに何か変更をpushするか、ダッシュボードから
+   「Retry deployment」を行ってください）
+
+環境変数が未設定のままデプロイすると、サイトにアクセスした際に
+「Basic認証の環境変数が設定されていません」というエラーが表示されます。
